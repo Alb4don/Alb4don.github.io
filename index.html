@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Geometric Structures in Particle Physics Simulation</title>
+<style>
+  
+  body, html {
+    margin: 0; padding: 0; height: 100%;
+    background: #121212;
+    color: #eee;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+  }
+  #container {
+    display: flex; flex-direction: column; height: 100vh;
+    justify-content: center; align-items: center;
+    padding: 1rem;
+    box-sizing: border-box;
+  }
+  canvas {
+    border-radius: 8px;
+    box-shadow: 0 0 30px rgba(255,255,255,0.08);
+    background: #1e1e1e;
+    display: block;
+    max-width: 90vw;
+    max-height: 60vh;
+  }
+  #info {
+    margin: 1rem 0 0 0;
+    font-size: 1rem;
+    color: #aaa;
+    user-select: none;
+    text-align: center;
+    max-width: 900px;
+    line-height: 1.4;
+  }
+  #title {
+    font-weight: bold;
+    font-size: 1.3rem;
+    margin-bottom: 0.3rem;
+    color: #40c4ff;
+  }
+</style>
+</head>
+<body>
+<div id="container">
+  <canvas id="simulation" width="900" height="600"></canvas>
+  <div id="info">
+    <div id="title">Purpose of the Simulation</div>
+    This interactive simulation visually represents key differential geometric structures that underpin modern particle physics theories as detailed in the scientific study by Silva & Armesto (2025). 
+    <br><br>
+    The left panel illustrates <em>Gauge Field Intensities</em> through dynamic 2D wave interference patterns symbolizing gauge fields which mediate fundamental interactions (electromagnetic, weak, strong) via Yang-Mills gauge theories. Overlaid is a simplified visualization of a <em>fiber bundle</em> emphasizing internal gauge symmetries that unify interactions in the Standard Model.
+    <br><br>
+    The right panel features a <em>Spacetime Curvature Grid</em> demonstrating radial distortions around a massive object, inspired by general relativity's geometric description of gravity as curvature in spacetime. This shows how differential geometry models gravitational effects on particle dynamics.
+    <br><br>
+    Together, these visual elements portray how abstract geometric concepts like fiber bundles, gauge connections, and curvature form the mathematical backbone for understanding and unifying fundamental forces and particles.
+  </div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('simulation');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+
+  let time = 0;
+
+  const gaugeColor = (v) => {
+    const stops = [
+      { stop: 0, color: [0, 32, 128] },
+      { stop: 0.25, color: [0, 192, 255] },
+      { stop: 0.5, color: [32, 255, 96] },
+      { stop: 0.75, color: [255, 224, 32] },
+      { stop: 1, color: [255, 64, 0] }
+    ];
+    for(let i = 0; i < stops.length - 1; i++) {
+      const c0 = stops[i], c1 = stops[i+1];
+      if (v >= c0.stop && v <= c1.stop) {
+        const ratio = (v - c0.stop) / (c1.stop - c0.stop);
+        const r = c0.color[0] + ratio * (c1.color[0] - c0.color[0]);
+        const g = c0.color[1] + ratio * (c1.color[1] - c0.color[1]);
+        const b = c0.color[2] + ratio * (c1.color[2] - c0.color[2]);
+        return `rgb(${r|0},${g|0},${b|0})`;
+      }
+    }
+    return 'rgb(255,0,0)';
+  };
+
+  const gaugeField = (x, y, t) => {
+    const freq = 0.01;
+    const phase1 = Math.sin(freq * x + t);
+    const phase2 = Math.cos(freq * y * 1.5 - t*1.4);
+    const phase3 = Math.sin(freq * 2 * (x + y) + t * 0.5);
+    return (phase1 + phase2 + phase3) / 3 * 0.5 + 0.5;
+  };
+
+  const curvatureGrid = {
+    size: 50,
+    spacing: 20,
+    massPos: { x: W * 0.75, y: H * 0.5 },
+    curvatureStrength: 1000,
+    
+    drawGrid() {
+      ctx.save();
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 1;
+
+      for(let i = 0; i <= this.size; i++) {
+        const xBase = i * this.spacing + W * 0.5;
+        ctx.beginPath();
+        for(let y = 0; y <= this.size; y++) {
+          const yPos = y * this.spacing;
+          const fromMassX = xBase - this.massPos.x;
+          const fromMassY = yPos - this.massPos.y;
+          const r = Math.sqrt(fromMassX * fromMassX + fromMassY * fromMassY);
+          const distortion = this.curvatureStrength / (r * r + 50);
+          const offsetX = Math.sin((y + time * 2) * 0.5) * distortion * 0.02;
+          const offsetY = Math.cos((y + time * 2) * 0.5) * distortion * 0.02;
+          const px = xBase + offsetX;
+          const py = yPos + offsetY;
+          if(y === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+      }
+
+      for(let j = 0; j <= this.size; j++) {
+        const yBase = j * this.spacing;
+        ctx.beginPath();
+        for(let x = 0; x <= this.size; x++) {
+          const xPos = x * this.spacing + W * 0.5;
+          const fromMassX = xPos - this.massPos.x;
+          const fromMassY = yBase - this.massPos.y;
+          const r = Math.sqrt(fromMassX * fromMassX + fromMassY * fromMassY);
+          const distortion = this.curvatureStrength / (r * r + 50);
+          const offsetX = Math.sin((x + time * 2) * 0.5) * distortion * 0.02;
+          const offsetY = Math.cos((x + time * 2) * 0.5) * distortion * 0.02;
+          const px = xPos + offsetX;
+          const py = yBase + offsetY;
+          if(x === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    },
+
+    drawMass() {
+      ctx.save();
+      const gradient = ctx.createRadialGradient(
+        this.massPos.x, this.massPos.y, 10,
+        this.massPos.x, this.massPos.y, 70
+      );
+      gradient.addColorStop(0, '#ff6e40');
+      gradient.addColorStop(1, 'rgba(255,110,64,0)');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(this.massPos.x, this.massPos.y, 60, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  };
+
+  const fiberBundle = {
+    center: { x: W * 0.25, y: H * 0.5 },
+    radius: 100,
+    frameCount: 12,
+    draw() {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(80, 255, 200, 0.35)';
+      ctx.lineWidth = 2;
+      ctx.fillStyle = 'rgba(0, 160, 140, 0.1)';
+
+      ctx.beginPath();
+      ctx.arc(this.center.x, this.center.y, this.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      const t = time;
+      for(let i = 0; i < this.frameCount; i++) {
+        const angleStart = (i / this.frameCount) * Math.PI * 2;
+        const angleEnd = ((i + 1) / this.frameCount) * Math.PI * 2;
+
+
+        const start = {
+          x: this.center.x + this.radius * Math.cos(angleStart),
+          y: this.center.y + this.radius * Math.sin(angleStart)
+        };
+        const end = {
+          x: this.center.x + this.radius * Math.cos(angleEnd),
+          y: this.center.y + this.radius * Math.sin(angleEnd)
+        };
+
+        const cx = (start.x + end.x) / 2 + 20 * Math.sin(t * 3 + i);
+        const cy = (start.y + end.y) / 2 + 20 * Math.cos(t * 3 + i);
+
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.quadraticCurveTo(cx, cy, end.x, end.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  };
+
+  function animate(timestamp) {
+    time = (timestamp || 0) * 0.001;
+
+    ctx.clearRect(0, 0, W, H);
+
+    const leftWidth = Math.floor(W * 0.47);
+    const leftHeight = Math.floor(H);
+
+    const imgData = ctx.createImageData(leftWidth, leftHeight);
+    for(let y = 0; y < leftHeight; y++) {
+      for(let x = 0; x < leftWidth; x++) {
+        const idx = (y * leftWidth + x) * 4;
+        const normX = x / leftWidth * 300;
+        const normY = y / leftHeight * 300;
+        const val = gaugeField(normX, normY, time);
+        const color = gaugeColor(val);
+        const match = color.match(/\d+/g);
+        imgData.data[idx] = +match[0];
+        imgData.data[idx+1] = +match[1];
+        imgData.data[idx+2] = +match[2];
+        imgData.data[idx+3] = 255;
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+
+    ctx.fillStyle = '#7f8c8dcc';
+    ctx.font = '14px "Segoe UI", Tahoma, Geneva, Verdana, sans-serif';
+    ctx.fillText('Gauge Field Intensity (2D)', 20, 30);
+
+    fiberBundle.draw();
+
+    curvatureGrid.drawGrid();
+    curvatureGrid.drawMass();
+
+    ctx.fillStyle = '#7f8c8dcc';
+    ctx.font = '14px sans-serif';
+    ctx.fillText('Spacetime Curvature around Mass', W*0.55, 30);
+
+    requestAnimationFrame(animate);
+  }
+
+  requestAnimationFrame(animate);
+})();
+</script>
+</body>
+</html>
