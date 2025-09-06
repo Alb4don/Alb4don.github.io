@@ -1,1 +1,1 @@
- - This basic simulation is based on my graduate thesis, which highlights the synergy of geometry and particle physics for advancing fundamental science.
+ - This basic simulation is based on my postgraduate program, which highlights the synergy of geometry and particle physics for advancing fundamental science.
